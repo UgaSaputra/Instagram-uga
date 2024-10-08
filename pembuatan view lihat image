@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lihat Postingan</title>
+    <link href="{{ asset('css/postingan.css') }}" rel="stylesheet">
+</head>
+<body>
+    <a href="{{url('/dashboard')}}">
+        <button type="submit" class="btn btn-danger">+ADD Postingan</button>
+    </a>
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+
+        <x-responsive-nav-link :href="route('logout')"
+                onclick="event.preventDefault();
+                            this.closest('form').submit();">
+            {{ __('Log Out') }}
+        </x-responsive-nav-link>
+    </form>
+    <div class="gallery">
+        @foreach ($images as $image)
+            <div class="image-card">
+                <h3>Unggah oleh: {{ $image->user->name }}</h3>
+                <img src="{{ asset('imgpost/' . $image->image) }}" alt="Image" style="max-width: 300px; max-height: 200px; border-radius: 8px;">
+                
+                <div>
+                    <td>
+                        <form action="{{ route('post.destroy', $image->id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                            <a href="{{ route('edit.image', $image->id) }}" class="btn btn-primary">Edit</a>
+                        </form>
+                    </td>
+                </div>
+
+                <div class="comments-section">
+                    <h4>Komentar</h4>
+                    @foreach($image->comments as $comment)
+                        <div class="comment">
+                            <strong>{{ $comment->user->name }}</strong>: {{ $comment->comment }}
+                            <small>{{ $comment->created_at->diffForHumans() }}</small>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if (Auth::check())
+                    <form action="{{ route('comment.store', $image->id) }}" method="POST" class="mt-2">
+                        @csrf
+                        <div class="form-group">
+                            <textarea name="comment" class="form-control" rows="2" placeholder="Tambahkan komentar..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-secondary mt-2">Kirim Komentar</button>
+                    </form>
+                @endif
+
+                <div class="like-section mt-3">
+                    @if ($image->likedByUser(Auth::id()))
+                        <form action="{{ route('post.unlike', $image->id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="btn btn-danger">Unlike</button>
+                        </form>
+                    @else
+                        <form action="{{ route('post.like', $image->id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="btn btn-primary">Like</button>
+                        </form>
+                    @endif
+                    <p>{{ $image->likes->count() }} Likes</p>
+                </div>
+            </div>
+        @endforeach
+    </div> 
+</body>
+</html>
