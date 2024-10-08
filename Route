@@ -1,0 +1,46 @@
+<?php
+
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/dashboard', function () {
+    return view('Instagram.create');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
+
+Route::get('/create', [PostController::class, 'lihat'])->name('index');
+Route::post('/dashboard', [App\Http\Controllers\PostController::class, 'create'])->name('post.new')->middleware('auth');
+Route::get('/lihat', [PostController::class, 'lihatpostingan'])->name('post.lihat');
+Route::delete('/image/{id}', [PostController::class, 'destroy'])->name('post.destroy');
+Route::get('/image/edit/{id}', [PostController::class, 'edit'])->name('edit.image');
+Route::put('/image/{id}', [PostController::class, 'update'])->name('update.image');
+Route::post('/post/{postId}/comment', [PostController::class, 'Comment'])->name('comment.store');
+Route::post('/post/{postId}/like', [PostController::class, 'likePost'])->name('post.like');
+Route::post('/post/{postId}/unlike', [PostController::class, 'unlikePost'])->name('post.unlike');
+
+
+
+
