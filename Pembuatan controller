@@ -1,0 +1,130 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Like;
+use App\Models\Post;
+use App\Models\Comment;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class PostController extends Controller
+{
+    public function lihat()
+    {
+        $images = Post::with('user')->latest()->get();
+
+        return view('Instagram.create', compact('images'));
+    }
+
+    public function lihatpostingan()
+    {
+        $images = Post::with('user')->latest()->get();
+        return view('Instagram.lihat', compact('images'));
+    }
+
+    public function create(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+    
+        if ($request->hasFile('image')) {
+            $filename = time() . "-" . $request->image->getClientOriginalName();
+            
+            $imagePath = $request->image->move(public_path('imgpost'), $filename);
+    
+            $imageData = new Post();
+            $imageData->user_id = Auth::id();
+            $imageData->image = $filename; 
+            $imageData->save();
+    
+            return redirect()->back()->with('success', 'Gambar berhasil diunggah!');
+        }
+    
+        return redirect()->back()->with('error', 'Gagal mengunggah gambar.');
+    }
+    
+    public function edit($id)
+    {
+        $image = Post::findOrFail($id); 
+        return view('Instagram.edit', compact('image'));
+    }
+    
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+    
+        $imagePost = Post::findOrFail($id);
+    
+        if ($request->hasFile('image')) {
+            if ($imagePost->image && file_exists(public_path('imgpost/' . $imagePost->image))) {
+                unlink(public_path('imgpost/' . $imagePost->image));
+            }
+    
+            $filename = time() . "-" . $request->image->getClientOriginalName();
+            
+            $request->image->move(public_path('imgpost'), $filename);
+    
+            $imagePost->image = $filename; 
+        }
+    
+        $imagePost->save();
+    
+        return redirect()->route('post.lihat', ['id' => $id])->with('success', 'Gambar berhasil diupdate');
+    }
+    
+
+
+    public function destroy($id)
+    {
+        Post::findOrFail($id)->delete();
+        return redirect()->back()->with('success', 'Gambar berhasil dihapus.');
+    }
+
+    public function Comment(Request $request, $postId)
+    {
+        $request->validate([
+            'comment' => 'required|string|max:255',
+        ]);
+
+        $post = Post::findOrFail($postId);
+
+        $comment = new Comment();
+        $comment->post_id = $post->id;
+        $comment->user_id = Auth::id();
+        $comment->comment = $request->comment;
+        $comment->save();
+
+        return redirect()->back()->with('success', 'Komentar berhasil ditambahkan!');
+    }
+
+    public function likePost($postId)
+    {
+        $post = Post::findOrFail($postId);
+
+        if (!$post->likedByUser(Auth::id())) {
+            Like::create([
+                'post_id' => $postId,
+                'user_id' => Auth::id(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Anda telah menyukai postingan ini!');
+    }
+
+    public function unlikePost($postId)
+    {
+        $post = Post::findOrFail($postId);
+
+        $like = $post->likes()->where('user_id', Auth::id())->first();
+        if ($like) {
+            $like->delete();
+        }
+
+        return redirect()->back()->with('success', 'Anda telah batal menyukai postingan ini.');
+    }
+}
